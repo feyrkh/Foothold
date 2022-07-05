@@ -1,0 +1,14 @@
+[remap]
+
+importer="inkgd.ink.json"
+type="Resource"
+path="res://.import/new_game.ink.json-92b69739da802a5cefc79b6068da5233.res"
+
+[deps]
+
+source_file="res://assets/ink/new_game.ink.json"
+dest_files=[ "res://.import/new_game.ink.json-92b69739da802a5cefc79b6068da5233.res" ]
+
+[params]
+
+compress=true
