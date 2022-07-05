@@ -4,12 +4,13 @@ class_name CommandTree
 const KEY_ITEM_ID='_' # Unique ID for every TreeItem
 const KEY_ITEM_TYPE='T' # ID for the type of item this is; see ITEM_TYPE_* constants
 const KEY_ALLOWED_TYPES='a' # Array of ITEM_TYPE_* values which are allowed for this entry
+const KEY_OWNER_LOCK='O' # ID of the owner of this container or entry - if set on an item, items can't be moved outside of the owning container. Creating a new container duplicates inside an existing container will duplicate its owner ID.
 
-const ITEM_TYPE_LOCATION='l'
+const ITEM_TYPE_LOCATION='l' # A physical place
 
 const ITEM_AMOUNT='A'
 
-var tree
+var tree:Tree
 var __next_id = 0
 var id_map = {}
 func get_next_id():
@@ -18,6 +19,8 @@ func get_next_id():
 	return retval
 
 func _ready() -> void:
+	Events.connect('create_tree_folder', self, 'create_tree_folder')
+
 	tree = $Tree
 	tree.connect('recreated_tree_item', self, 'recreated_tree_item')
 	tree.set_column_expand(0, true)
@@ -35,20 +38,28 @@ func _ready() -> void:
 
 	# TEMP
 	var root = tree.create_item()
-	add_item("Wizard's Tower", {KEY_ALLOWED_TYPES: [ITEM_TYPE_LOCATION]})
-	add_item("Wizard's Tower/Small Stone Chamber", {KEY_ITEM_TYPE: ITEM_TYPE_LOCATION, ITEM_AMOUNT: 1})
-	add_item("Wizard's Tower/Tower Roof", {KEY_ITEM_TYPE: ITEM_TYPE_LOCATION, ITEM_AMOUNT: 1})
-	add_item("Wizard's Tower/Kitchen", {KEY_ITEM_TYPE: ITEM_TYPE_LOCATION, ITEM_AMOUNT: 1})
-	add_item("Spine Foothills", {KEY_ALLOWED_TYPES: [ITEM_TYPE_LOCATION]})
-	add_item("Spine Foothills/Farmland", {KEY_ITEM_TYPE: ITEM_TYPE_LOCATION, ITEM_AMOUNT: 5})
-	add_item("Spine Foothills/Goblin Caves", {KEY_ITEM_TYPE: ITEM_TYPE_LOCATION, ITEM_AMOUNT: 1})
-	add_item("Astral Plane", {KEY_ALLOWED_TYPES: [ITEM_TYPE_LOCATION]})
-	add_item("Astral Plane/Your Soul", {KEY_ALLOWED_TYPES: [ITEM_TYPE_LOCATION]})
-	add_item("Astral Plane/Your Soul/Greed", {KEY_ITEM_TYPE: ITEM_TYPE_LOCATION, ITEM_AMOUNT: 1})
-	add_item("Astral Plane/Your Soul/Envy", {KEY_ITEM_TYPE: ITEM_TYPE_LOCATION, ITEM_AMOUNT: 1})
+	root.set_metadata(0, {KEY_ALLOWED_TYPES: []})
+	add_item("Wizard's Tower", {KEY_ALLOWED_TYPES: [ITEM_TYPE_LOCATION], KEY_OWNER_LOCK: 'wiztow'})
+	add_item("Wizard's Tower/Small Stone Chamber", {KEY_ITEM_TYPE: ITEM_TYPE_LOCATION, KEY_ALLOWED_TYPES: ['sin'], ITEM_AMOUNT: 1, KEY_OWNER_LOCK: 'wiztow'})
+	add_item("Wizard's Tower/Tower Roof", {KEY_ITEM_TYPE: ITEM_TYPE_LOCATION, ITEM_AMOUNT: 1, KEY_OWNER_LOCK: 'wiztow'})
+	add_item("Wizard's Tower/Kitchen", {KEY_ITEM_TYPE: ITEM_TYPE_LOCATION, ITEM_AMOUNT: 1, KEY_OWNER_LOCK: 'wiztow'})
+	add_item("Spine Foothills", {KEY_ALLOWED_TYPES: [ITEM_TYPE_LOCATION], KEY_OWNER_LOCK: 'sphill'})
+	add_item("Spine Foothills/Farmland", {KEY_ITEM_TYPE: ITEM_TYPE_LOCATION, ITEM_AMOUNT: 5, KEY_OWNER_LOCK: 'sphill'})
+	add_item("Spine Foothills/Goblin Caves", {KEY_ITEM_TYPE: ITEM_TYPE_LOCATION, ITEM_AMOUNT: 1, KEY_OWNER_LOCK: 'sphill'})
+	add_item("Astral Plane", {KEY_ALLOWED_TYPES: ['soul']})
+	add_item("Astral Plane/Your Soul", {KEY_ITEM_TYPE: 'soul', KEY_ALLOWED_TYPES: ['sin'], KEY_OWNER_LOCK: 'soul1'})
+	add_item("Astral Plane/Your Soul/My Greed", {KEY_ITEM_TYPE: 'sin', KEY_OWNER_LOCK: 'soul1', ITEM_AMOUNT: 1})
+	add_item("Astral Plane/Your Soul/My Envy", {KEY_ITEM_TYPE: 'sin', KEY_OWNER_LOCK: 'soul1', ITEM_AMOUNT: 1})
+	add_item("Astral Plane/Other Soul", {KEY_ITEM_TYPE: 'soul', KEY_ALLOWED_TYPES: ['sin'], KEY_OWNER_LOCK: 'soul2'})
+	add_item("Astral Plane/Other Soul/Greed", {KEY_ITEM_TYPE: 'sin', ITEM_AMOUNT: 1})
+	add_item("Astral Plane/Other Soul/Envy", {KEY_ITEM_TYPE: 'sin', ITEM_AMOUNT: 1})
+	add_item("Astral Plane/Final Soul", {KEY_ITEM_TYPE: 'soul', KEY_ALLOWED_TYPES: ['sin'], KEY_OWNER_LOCK: 'soul3'})
+	add_item("Astral Plane/Final Soul/Greed", {KEY_ITEM_TYPE: 'sin', ITEM_AMOUNT: 1})
+	add_item("Astral Plane/Final Soul/Envy", {KEY_ITEM_TYPE: 'sin', ITEM_AMOUNT: 1})
 
 func item_selected():
 	var selected_item = tree.get_selected()
+	#TODO: Render the options available for the specific selected item
 
 
 
@@ -112,3 +123,15 @@ func find_item_by_path(loc_name, root=tree.get_root()):
 
 func can_drop_data(position, data):
 	return true # hack to avoid the ugly "can't drop here" mouse cursor
+
+func create_tree_folder(parent_tree_item, folder_name):
+	var md = parent_tree_item.get_metadata(0)
+	var allowed_types = md.get(KEY_ALLOWED_TYPES)
+	var owner_lock = md.get(KEY_OWNER_LOCK)
+	var new_md = {}
+	if allowed_types:
+		new_md[KEY_ALLOWED_TYPES] = allowed_types
+	if owner_lock:
+		new_md[KEY_OWNER_LOCK] = owner_lock
+	var new_item:TreeItem = add_item(folder_name, new_md, parent_tree_item)
+	tree.scroll_to_item(new_item)

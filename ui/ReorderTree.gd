@@ -28,10 +28,20 @@ func can_drop_on_top(dropped_item, target_item):
 	var dropped_metadata = dropped_item.get_metadata(0)
 	if dropped_metadata == null or target_metadata == null:
 		return false
+
+	# Some items are locked to a particular owner - check to see if this is one of them and whether the target is a qualified owner
+	var dropped_lock = dropped_item.get_metadata(0).get(CommandTree.KEY_OWNER_LOCK)
+	if dropped_lock:
+		var target_lock = target_item.get_metadata(0).get(CommandTree.KEY_OWNER_LOCK)
+		if target_lock != dropped_lock: # and not (target_lock is Array and target_lock.has(dropped_lock)):
+			set_drop_mode_flags(DROP_MODE_DISABLED)
+			return false
+
 	var allowed_types = target_metadata.get(CommandTree.KEY_ALLOWED_TYPES)
 	var drop_type = dropped_metadata.get(CommandTree.KEY_ITEM_TYPE)
 	if allowed_types != null and allowed_types.has(drop_type):
 		return true
+
 
 func check_drop_data_valid(position, dropped_item):
 	var target_item:TreeItem = get_item_at_position(position)
@@ -41,18 +51,28 @@ func check_drop_data_valid(position, dropped_item):
 		return false
 	var dropped_item_parent:TreeItem = dropped_item.get_parent()
 	if target_item == null:
-		 # can drop it at the bottom of the list if you don't target any items and you're a top-level entry
+		 # can drop it at the bottom of the list if you don't target any items
 		set_drop_mode_flags(DROP_MODE_DISABLED)
-		return dropped_item_parent == get_root()
-	if can_drop_on_top(dropped_item, target_item):
-		set_drop_mode_flags(DROP_MODE_INBETWEEN | DROP_MODE_ON_ITEM)
-	else:
-		set_drop_mode_flags(DROP_MODE_INBETWEEN)
+		#return dropped_item_parent == get_root()
+		return true
+
 	var dropped_on_parent:TreeItem = target_item.get_parent()
-	var drop_offset:int = get_drop_section_at_position(position)
-	# The two items share a parent
-	if dropped_item_parent == dropped_on_parent:
-			return true
+	var drop_offset = get_drop_section_at_position(position)
+	if drop_offset == 0 and can_drop_on_top(dropped_item, target_item):
+		# dropping on top of an entry, and we're allowed
+		set_drop_mode_flags(DROP_MODE_INBETWEEN | DROP_MODE_ON_ITEM)
+		return true
+	elif dropped_item_parent == dropped_on_parent:
+		# we already share a parent, and not trying to drop on top of a valid container, so we can drop in between
+		set_drop_mode_flags(DROP_MODE_INBETWEEN)
+		return true
+	elif drop_offset != 0 and can_drop_on_top(dropped_item, dropped_on_parent):
+		# we don't share a parent, but we're trying to drop in between something we're allowed to
+		set_drop_mode_flags(DROP_MODE_INBETWEEN)
+		return true
+	else:
+		set_drop_mode_flags(DROP_MODE_DISABLED)
+
 
 func drop_data(position, dropped_item):
 	var dropped_on = get_item_at_position(position)
@@ -61,6 +81,9 @@ func drop_data(position, dropped_item):
 	set_drop_mode_flags(DROP_MODE_DISABLED)
 
 func move_item(dropped_item, target_item, drop_offset):
+	if drop_offset == 0 and !(drop_mode_flags & DROP_MODE_ON_ITEM):
+		# Trying to drop on top of an item that we don't support dropping on top of, so try dropping above it instead
+		drop_offset = -1
 	if dropped_item == null:
 		return
 	if target_item == dropped_item:
@@ -71,12 +94,17 @@ func move_item(dropped_item, target_item, drop_offset):
 	if target_item == null and drop_offset == -100:
 		# dropped on the bottom of the list, just add it to the end of the list
 		dropped_item.move_to_bottom()
+	elif drop_offset == 0:
+		# dropping on top of a container - create a new item and move it to the top of the list
+		var new_item = clone_item(target_item, dropped_item)
+		new_item.move_to_top()
+		free_item(dropped_item)
 	else:
-		# dropped on an actual entry
+		# dropped above or below an entry
 		dropped_on_parent = target_item.get_parent()
 		# The two items share a parent - it's ok to reorder them
-		if dropped_item_parent == dropped_on_parent:
-			clone_item_list(dropped_on_parent, dropped_item, target_item, drop_offset)
+#		if dropped_item_parent == dropped_on_parent:
+		clone_item_list(dropped_on_parent, dropped_item, target_item, drop_offset)
 	#		dropped_item_parent.move_child(dropped_item, max(0, target_item.get_position_in_parent() + drop_offset))
 		# The target item is the parent of the dropped item - ok to drop if the offset is >= 0, it goes to the top; otherwise not ok
 		if dropped_item_parent == get_root():
@@ -101,14 +129,20 @@ func clone_item_list(dropped_on_parent, dropped_item, target_item, drop_offset):
 		while cur_child != null:
 			if cur_child == target_item:
 				new_child = clone_item(dropped_on_parent, dropped_item)
-				# There's different behavior for offset if you have children vs if you're a leaf node
-				# Parent nodes can only drop items above themselves, not below.
-				if drop_offset <= 0 or !can_drop_on_top(dropped_item, target_item):
+				if drop_offset < 0:
 					original_items.append(new_child)
 					original_items.append(cur_child)
+				elif drop_offset == 0 and can_drop_on_top(dropped_item, target_item):
+					pass # TODO: Drop inside a folder
 				else:
-					original_items.append(cur_child)
-					original_items.append(new_child)
+					# There's different behavior for offset if you have children vs if you're a leaf node
+					# Parent nodes can only drop items above themselves, not below.
+					if target_item.get_children() == null:
+						original_items.append(cur_child)
+						original_items.append(new_child)
+					else:
+						original_items.append(new_child)
+						original_items.append(cur_child)
 			elif cur_child == dropped_item:
 				pass
 			elif cur_child == new_child:

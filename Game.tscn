@@ -1,8 +1,9 @@
-[gd_scene load_steps=4 format=2]
+[gd_scene load_steps=5 format=2]
 
 [ext_resource path="res://story/InkBook.tscn" type="PackedScene" id=1]
 [ext_resource path="res://Game.gd" type="Script" id=2]
 [ext_resource path="res://ui/CommandTree.tscn" type="PackedScene" id=3]
+[ext_resource path="res://ui/ActionPanel.tscn" type="PackedScene" id=4]
 
 [node name="Game" type="Control"]
 anchor_right = 1.0
@@ -28,13 +29,15 @@ __meta__ = {
 "_edit_use_anchors_": false
 }
 
-[node name="CommandTree" parent="UI/HSplitContainer" instance=ExtResource( 3 )]
+[node name="VBoxContainer" type="VBoxContainer" parent="UI/HSplitContainer"]
+margin_right = 300.0
 margin_bottom = 600.0
 
-[node name="Panel" type="Panel" parent="UI/HSplitContainer"]
-margin_left = 308.0
-margin_right = 1024.0
+[node name="CommandTree" parent="UI/HSplitContainer/VBoxContainer" instance=ExtResource( 3 )]
 margin_bottom = 600.0
+size_flags_vertical = 3
+
+[node name="ActionPanel" parent="UI/HSplitContainer" instance=ExtResource( 4 )]
 
 [node name="InkBook" parent="." instance=ExtResource( 1 )]
 visible = false
