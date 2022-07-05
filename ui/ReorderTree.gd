@@ -22,11 +22,14 @@ func can_drop_data(position, data):
 		return false
 
 func can_drop_on_top(dropped_item, target_item):
+	print('candrop?')
 	if target_item == null or dropped_item == null:
+		print('candrop: one is null')
 		return false
 	var target_metadata = target_item.get_metadata(0)
 	var dropped_metadata = dropped_item.get_metadata(0)
 	if dropped_metadata == null or target_metadata == null:
+		print('candrop: metadata is null')
 		return false
 
 	# Some items are locked to a particular owner - check to see if this is one of them and whether the target is a qualified owner
@@ -35,42 +38,61 @@ func can_drop_on_top(dropped_item, target_item):
 		var target_lock = target_item.get_metadata(0).get(CommandTree.KEY_OWNER_LOCK)
 		if target_lock != dropped_lock: # and not (target_lock is Array and target_lock.has(dropped_lock)):
 			set_drop_mode_flags(DROP_MODE_DISABLED)
+			print('candrop: differing locks')
 			return false
 
 	var allowed_types = target_metadata.get(CommandTree.KEY_ALLOWED_TYPES)
 	var drop_type = dropped_metadata.get(CommandTree.KEY_ITEM_TYPE)
 	if allowed_types != null and allowed_types.has(drop_type):
 		return true
+	else:
+		print('candrop: disallowed types')
+		return false
 
 
 func check_drop_data_valid(position, dropped_item):
 	var target_item:TreeItem = get_item_at_position(position)
 	if dropped_item == null:
+		print('chkdrop: no dropped item')
 		return false
 	if target_item == dropped_item:
+		print('chkdrop: same dropped item')
 		return false
 	var dropped_item_parent:TreeItem = dropped_item.get_parent()
 	if target_item == null:
 		 # can drop it at the bottom of the list if you don't target any items
 		set_drop_mode_flags(DROP_MODE_DISABLED)
+		print('chkdrop: no target item')
 		#return dropped_item_parent == get_root()
 		return true
 
 	var dropped_on_parent:TreeItem = target_item.get_parent()
 	var drop_offset = get_drop_section_at_position(position)
-	if drop_offset == 0 and can_drop_on_top(dropped_item, target_item):
+	print(drop_offset, '; candropontop? ', can_drop_on_top(dropped_item, target_item))
+	var can_drop_on_target = can_drop_on_top(dropped_item, target_item)
+	if drop_offset == 0 and can_drop_on_target:
 		# dropping on top of an entry, and we're allowed
 		set_drop_mode_flags(DROP_MODE_INBETWEEN | DROP_MODE_ON_ITEM)
+		print('chkdrop: ofs=0, candrop')
 		return true
 	elif dropped_item_parent == dropped_on_parent:
 		# we already share a parent, and not trying to drop on top of a valid container, so we can drop in between
-		set_drop_mode_flags(DROP_MODE_INBETWEEN)
+		if can_drop_on_target:
+			set_drop_mode_flags(DROP_MODE_INBETWEEN | DROP_MODE_ON_ITEM)
+		else:
+			set_drop_mode_flags(DROP_MODE_INBETWEEN)
+		print('chkdrop: share parent')
 		return true
 	elif drop_offset != 0 and can_drop_on_top(dropped_item, dropped_on_parent):
 		# we don't share a parent, but we're trying to drop in between something we're allowed to
-		set_drop_mode_flags(DROP_MODE_INBETWEEN)
+		if can_drop_on_target:
+			set_drop_mode_flags(DROP_MODE_INBETWEEN | DROP_MODE_ON_ITEM)
+		else:
+			set_drop_mode_flags(DROP_MODE_INBETWEEN)
+		print('chkdrop: can drop around, diff parent')
 		return true
 	else:
+		print('chkdrop: nodrop')
 		set_drop_mode_flags(DROP_MODE_DISABLED)
 
 

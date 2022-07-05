@@ -1,6 +1,8 @@
 extends Control
 class_name CommandTree
 
+signal item_selected(tree_item)
+
 const KEY_ITEM_ID='_' # Unique ID for every TreeItem
 const KEY_ITEM_TYPE='T' # ID for the type of item this is; see ITEM_TYPE_* constants
 const KEY_ALLOWED_TYPES='a' # Array of ITEM_TYPE_* values which are allowed for this entry
@@ -17,6 +19,9 @@ func get_next_id():
 	var retval = __next_id
 	__next_id += 1
 	return retval
+
+func get_item_by_id(item_id):
+	return id_map[item_id]
 
 func _ready() -> void:
 	Events.connect('create_tree_folder', self, 'create_tree_folder')
@@ -39,14 +44,14 @@ func _ready() -> void:
 	# TEMP
 	var root = tree.create_item()
 	root.set_metadata(0, {KEY_ALLOWED_TYPES: []})
-	add_item("Wizard's Tower", {KEY_ALLOWED_TYPES: [ITEM_TYPE_LOCATION], KEY_OWNER_LOCK: 'wiztow'})
+	add_item("Wizard's Tower", {KEY_ITEM_TYPE: ITEM_TYPE_LOCATION, KEY_ALLOWED_TYPES: [ITEM_TYPE_LOCATION], KEY_OWNER_LOCK: 'wiztow'})
 	add_item("Wizard's Tower/Small Stone Chamber", {KEY_ITEM_TYPE: ITEM_TYPE_LOCATION, KEY_ALLOWED_TYPES: ['sin'], ITEM_AMOUNT: 1, KEY_OWNER_LOCK: 'wiztow'})
 	add_item("Wizard's Tower/Tower Roof", {KEY_ITEM_TYPE: ITEM_TYPE_LOCATION, ITEM_AMOUNT: 1, KEY_OWNER_LOCK: 'wiztow'})
 	add_item("Wizard's Tower/Kitchen", {KEY_ITEM_TYPE: ITEM_TYPE_LOCATION, ITEM_AMOUNT: 1, KEY_OWNER_LOCK: 'wiztow'})
-	add_item("Spine Foothills", {KEY_ALLOWED_TYPES: [ITEM_TYPE_LOCATION], KEY_OWNER_LOCK: 'sphill'})
+	add_item("Spine Foothills", {KEY_ITEM_TYPE: ITEM_TYPE_LOCATION, KEY_ALLOWED_TYPES: [ITEM_TYPE_LOCATION], KEY_OWNER_LOCK: 'sphill'})
 	add_item("Spine Foothills/Farmland", {KEY_ITEM_TYPE: ITEM_TYPE_LOCATION, ITEM_AMOUNT: 5, KEY_OWNER_LOCK: 'sphill'})
 	add_item("Spine Foothills/Goblin Caves", {KEY_ITEM_TYPE: ITEM_TYPE_LOCATION, ITEM_AMOUNT: 1, KEY_OWNER_LOCK: 'sphill'})
-	add_item("Astral Plane", {KEY_ALLOWED_TYPES: ['soul']})
+	add_item("Astral Plane", {KEY_ITEM_TYPE: ITEM_TYPE_LOCATION, KEY_ALLOWED_TYPES: ['soul']})
 	add_item("Astral Plane/Your Soul", {KEY_ITEM_TYPE: 'soul', KEY_ALLOWED_TYPES: ['sin'], KEY_OWNER_LOCK: 'soul1'})
 	add_item("Astral Plane/Your Soul/My Greed", {KEY_ITEM_TYPE: 'sin', KEY_OWNER_LOCK: 'soul1', ITEM_AMOUNT: 1})
 	add_item("Astral Plane/Your Soul/My Envy", {KEY_ITEM_TYPE: 'sin', KEY_OWNER_LOCK: 'soul1', ITEM_AMOUNT: 1})
@@ -59,9 +64,7 @@ func _ready() -> void:
 
 func item_selected():
 	var selected_item = tree.get_selected()
-	#TODO: Render the options available for the specific selected item
-
-
+	emit_signal("item_selected", selected_item)
 
 func recreated_tree_item(item:TreeItem):
 	var metadata = item.get_metadata(0)

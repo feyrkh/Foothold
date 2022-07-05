@@ -1,15 +1,13 @@
-extends PopupPanel
+extends TreeItemAware
 
 onready var FolderName:LineEdit = find_node('FolderName')
-
-var parent_item:TreeItem
 
 func _on_CancelButton_pressed() -> void:
 	queue_free()
 
 
 func _on_OkButton_pressed() -> void:
-	Events.emit_signal('create_tree_folder', parent_item, FolderName.text)
+	Events.emit_signal('create_tree_folder', get_parent_item(), FolderName.text)
 	queue_free()
 
 

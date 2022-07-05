@@ -1,13 +1,16 @@
 extends Control
 
+var CmdTree
+
 func _ready() -> void:
 	Events.connect("new_game", self, "new_game")
 	Events.connect("continue_game", self, "continue_game")
 	Events.connect("exit_game", self, "exit_game")
-	$InkBook.visible = true
+	$InkBook.visible = false
 	$InkBook.start_story('res://assets/ink/new_game.ink.json', InkBookSaveData.new('new_game', {'save_data_exists': false}), self, "story_loaded")
-	$UI.visible = false
-
+	$UI.visible = true
+	CmdTree = find_node('CommandTree')
+	CmdTree.connect('item_selected', find_node('ActionPanel'), 'load_actions', [CmdTree])
 	pass
 
 func story_loaded(successfully):
