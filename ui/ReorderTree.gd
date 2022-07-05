@@ -22,6 +22,8 @@ func can_drop_data(position, data):
 		return false
 
 func can_drop_on_top(dropped_item, target_item):
+	if target_item == null or dropped_item == null:
+		return false
 	var target_metadata = target_item.get_metadata(0)
 	var dropped_metadata = dropped_item.get_metadata(0)
 	if dropped_metadata == null or target_metadata == null:
@@ -38,9 +40,10 @@ func check_drop_data_valid(position, dropped_item):
 	if target_item == dropped_item:
 		return false
 	var dropped_item_parent:TreeItem = dropped_item.get_parent()
-	if target_item == null and dropped_item_parent == get_root():
+	if target_item == null:
+		 # can drop it at the bottom of the list if you don't target any items and you're a top-level entry
 		set_drop_mode_flags(DROP_MODE_DISABLED)
-		return true # can drop it at the bottom of the list if you don't target any items and you're a top-level entry
+		return dropped_item_parent == get_root()
 	if can_drop_on_top(dropped_item, target_item):
 		set_drop_mode_flags(DROP_MODE_INBETWEEN | DROP_MODE_ON_ITEM)
 	else:
@@ -58,28 +61,35 @@ func drop_data(position, dropped_item):
 	set_drop_mode_flags(DROP_MODE_DISABLED)
 
 func move_item(dropped_item, target_item, drop_offset):
-	if target_item == null or dropped_item == null:
+	if dropped_item == null:
 		return
 	if target_item == dropped_item:
 		return
+
 	var dropped_item_parent = dropped_item.get_parent()
-	var dropped_on_parent = target_item.get_parent()
-	# The two items share a parent - it's ok to reorder them
-	if dropped_item_parent == dropped_on_parent:
-		clone_item_list(dropped_on_parent, dropped_item, target_item, drop_offset)
-#		dropped_item_parent.move_child(dropped_item, max(0, target_item.get_position_in_parent() + drop_offset))
-	# The target item is the parent of the dropped item - ok to drop if the offset is >= 0, it goes to the top; otherwise not ok
-	if dropped_item_parent == get_root():
-	# The dropped item is a top-level item, and the target item last item of the whole tree - ok to drop if the offset is >= 0, it goes to the bottom of the current list
-		var is_last_item_of_whole_tree = true
-		var cur_item = target_item
-		while cur_item != null:
-			if cur_item.get_next() != null:
-				is_last_item_of_whole_tree = false
-				break
-			cur_item = cur_item.get_parent()
-		if is_last_item_of_whole_tree:
-			dropped_item.move_to_bottom()
+	var dropped_on_parent
+	if target_item == null and drop_offset == -100:
+		# dropped on the bottom of the list, just add it to the end of the list
+		dropped_item.move_to_bottom()
+	else:
+		# dropped on an actual entry
+		dropped_on_parent = target_item.get_parent()
+		# The two items share a parent - it's ok to reorder them
+		if dropped_item_parent == dropped_on_parent:
+			clone_item_list(dropped_on_parent, dropped_item, target_item, drop_offset)
+	#		dropped_item_parent.move_child(dropped_item, max(0, target_item.get_position_in_parent() + drop_offset))
+		# The target item is the parent of the dropped item - ok to drop if the offset is >= 0, it goes to the top; otherwise not ok
+		if dropped_item_parent == get_root():
+		# The dropped item is a top-level item, and the target item last item of the whole tree - ok to drop if the offset is >= 0, it goes to the bottom of the current list
+			var is_last_item_of_whole_tree = true
+			var cur_item = target_item
+			while cur_item != null:
+				if cur_item.get_next() != null:
+					is_last_item_of_whole_tree = false
+					break
+				cur_item = cur_item.get_parent()
+			if is_last_item_of_whole_tree:
+				dropped_item.move_to_bottom()
 
 func clone_item_list(dropped_on_parent, dropped_item, target_item, drop_offset):
 	var original_items = []
@@ -118,9 +128,13 @@ func clone_item_list(dropped_on_parent, dropped_item, target_item, drop_offset):
 	update()
 
 func free_item(item):
+	if !item:
+		return
 	var child = item.get_children()
-	while child != null:
-		free_item(child)
+	while child:
+		var to_free = child
+		child = child.get_next()
+		free_item(to_free)
 	item.free()
 
 func clone_item(item_parent, item):

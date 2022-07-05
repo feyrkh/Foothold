@@ -422,6 +422,10 @@ window/stretch/aspect="keep"
 
 enabled=PoolStringArray( "res://addons/inkgd/plugin.cfg" )
 
+[global]
+
+cursor=false
+
 [physics]
 
 common/enable_pause_aware_picking=true

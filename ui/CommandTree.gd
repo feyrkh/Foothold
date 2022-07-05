@@ -109,3 +109,6 @@ func find_item_by_path(loc_name, root=tree.get_root()):
 			return null # couldn't find
 		root = new_root
 	return root
+
+func can_drop_data(position, data):
+	return true # hack to avoid the ugly "can't drop here" mouse cursor
