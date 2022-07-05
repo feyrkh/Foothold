@@ -13,7 +13,43 @@ func get_drag_data(position: Vector2):
 	return get_selected()
 
 func can_drop_data(position, data):
-	return data is TreeItem
+	if  !(data is TreeItem):
+		return false
+	if check_drop_data_valid(position, data):
+		return true
+	else:
+		set_drop_mode_flags(DROP_MODE_DISABLED)
+		return false
+
+func can_drop_on_top(dropped_item, target_item):
+	var target_metadata = target_item.get_metadata(0)
+	var dropped_metadata = dropped_item.get_metadata(0)
+	if dropped_metadata == null or target_metadata == null:
+		return false
+	var allowed_types = target_metadata.get(CommandTree.KEY_ALLOWED_TYPES)
+	var drop_type = dropped_metadata.get(CommandTree.KEY_ITEM_TYPE)
+	if allowed_types != null and allowed_types.has(drop_type):
+		return true
+
+func check_drop_data_valid(position, dropped_item):
+	var target_item:TreeItem = get_item_at_position(position)
+	if dropped_item == null:
+		return false
+	if target_item == dropped_item:
+		return false
+	var dropped_item_parent:TreeItem = dropped_item.get_parent()
+	if target_item == null and dropped_item_parent == get_root():
+		set_drop_mode_flags(DROP_MODE_DISABLED)
+		return true # can drop it at the bottom of the list if you don't target any items and you're a top-level entry
+	if can_drop_on_top(dropped_item, target_item):
+		set_drop_mode_flags(DROP_MODE_INBETWEEN | DROP_MODE_ON_ITEM)
+	else:
+		set_drop_mode_flags(DROP_MODE_INBETWEEN)
+	var dropped_on_parent:TreeItem = target_item.get_parent()
+	var drop_offset:int = get_drop_section_at_position(position)
+	# The two items share a parent
+	if dropped_item_parent == dropped_on_parent:
+			return true
 
 func drop_data(position, dropped_item):
 	var dropped_on = get_item_at_position(position)
@@ -48,30 +84,44 @@ func move_item(dropped_item, target_item, drop_offset):
 func clone_item_list(dropped_on_parent, dropped_item, target_item, drop_offset):
 	var original_items = []
 	var cur_child = dropped_on_parent.get_children()
+	var new_child
 	if cur_child == null: # must have been dropped on the parent
 		original_items = [dropped_item]
 	else:
 		while cur_child != null:
 			if cur_child == target_item:
-				if drop_offset <= 0:
-					original_items.append(dropped_item)
+				new_child = clone_item(dropped_on_parent, dropped_item)
+				# There's different behavior for offset if you have children vs if you're a leaf node
+				# Parent nodes can only drop items above themselves, not below.
+				if drop_offset <= 0 or !can_drop_on_top(dropped_item, target_item):
+					original_items.append(new_child)
 					original_items.append(cur_child)
 				else:
 					original_items.append(cur_child)
-					original_items.append(dropped_item)
+					original_items.append(new_child)
 			elif cur_child == dropped_item:
+				pass
+			elif cur_child == new_child:
 				pass
 			else:
 				original_items.append(cur_child)
-			dropped_on_parent.remove_child(cur_child)
+			#dropped_on_parent.remove_child(cur_child)
 			var old_child = cur_child
 			cur_child = cur_child.get_next()
 	yield(get_tree(), "idle_frame")
 	for item in original_items:
 		print("Rendering TreeItem: ", item.get_text(0))
-		clone_item(dropped_on_parent, item)
-		item.free()
+		#clone_item(dropped_on_parent, item)
+		item.move_to_bottom()
+	dropped_item.get_parent().remove_child(dropped_item)
+	free_item(dropped_item)
 	update()
+
+func free_item(item):
+	var child = item.get_children()
+	while child != null:
+		free_item(child)
+	item.free()
 
 func clone_item(item_parent, item):
 	print("Cloning item ", item.get_text(0), " under parent ", item_parent.get_text(0))
@@ -90,4 +140,5 @@ func clone_item(item_parent, item):
 		var old_child = child
 		child = old_child.get_next()
 		old_child.free()
+	return new_item
 
