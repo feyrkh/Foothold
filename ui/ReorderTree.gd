@@ -242,3 +242,12 @@ func clone_item(item_parent, item):
 		old_child.free()
 	return new_item
 
+func move_contents_to_parent(item_parent):
+	var new_parent = item_parent.get_parent()
+	if !new_parent:
+		push_error("Tried to copy contents of "+item_parent.get_text(0)+" to a nonexistent parent")
+		return
+	var child = item_parent.get_children()
+	while child != null:
+		clone_item(new_parent, child)
+		free_item(child)

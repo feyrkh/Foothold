@@ -1,6 +1,14 @@
 [gd_scene load_steps=2 format=2]
 
-[ext_resource path="res://ui/CreateFolderButton.gd" type="Script" id=1]
+[sub_resource type="GDScript" id=1]
+script/source = "extends TreeItemAware
+
+func _on_CreateFolder_pressed() -> void:
+	var popup:PopupPanel = preload(\"res://ui/CreateFolderPopup.tscn\").instance()
+	popup.set_parent_item(parent_tree, parent_item_id)
+	add_child(popup)
+	popup.popup_centered()
+"
 
 [node name="CreateFolder" type="Button"]
 anchor_left = 0.5
@@ -12,7 +20,7 @@ margin_top = -300.0
 margin_right = -500.0
 margin_bottom = -280.0
 text = "New Folder"
-script = ExtResource( 1 )
+script = SubResource( 1 )
 __meta__ = {
 "_edit_use_anchors_": false
 }

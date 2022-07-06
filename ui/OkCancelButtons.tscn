@@ -1,0 +1,44 @@
+[gd_scene load_steps=2 format=2]
+
+[ext_resource path="res://ui/OkCancelButtons.gd" type="Script" id=1]
+
+[node name="OkCancelButtons" type="HBoxContainer"]
+margin_top = 35.0
+margin_right = 279.0
+margin_bottom = 55.0
+script = ExtResource( 1 )
+__meta__ = {
+"_edit_use_anchors_": false
+}
+
+[node name="MarginContainer2" type="MarginContainer" parent="."]
+margin_right = 69.0
+margin_bottom = 20.0
+custom_constants/margin_left = 15
+
+[node name="CancelButton" type="Button" parent="MarginContainer2"]
+margin_left = 15.0
+margin_right = 69.0
+margin_bottom = 20.0
+text = "Cancel"
+
+[node name="MarginContainer" type="MarginContainer" parent="."]
+margin_left = 73.0
+margin_right = 230.0
+margin_bottom = 20.0
+rect_min_size = Vector2( 60, 0 )
+size_flags_horizontal = 3
+
+[node name="MarginContainer3" type="MarginContainer" parent="."]
+margin_left = 234.0
+margin_right = 279.0
+margin_bottom = 20.0
+custom_constants/margin_right = 15
+
+[node name="OkButton" type="Button" parent="MarginContainer3"]
+margin_right = 30.0
+margin_bottom = 20.0
+text = "Ok"
+
+[connection signal="pressed" from="MarginContainer2/CancelButton" to="." method="_on_CancelButton_pressed"]
+[connection signal="pressed" from="MarginContainer3/OkButton" to="." method="_on_OkButton_pressed"]

@@ -31,6 +31,8 @@ func get_item_by_id(item_id):
 
 func _ready() -> void:
 	Events.connect('create_tree_folder', self, 'create_tree_folder')
+	Events.connect('rename_tree_folder', self, 'rename_tree_folder')
+	Events.connect('delete_tree_folder', self, 'delete_tree_folder')
 
 	tree = $Tree
 	tree.connect('recreated_tree_item', self, 'recreated_tree_item')
@@ -148,3 +150,10 @@ func create_tree_folder(parent_tree_item, folder_name):
 		new_md[KEY_OWNER_LOCK] = owner_lock
 	var new_item:TreeItem = add_item(folder_name, new_md, parent_tree_item)
 	tree.scroll_to_item(new_item)
+
+func rename_tree_folder(parent_tree_item, folder_name):
+	parent_tree_item.set_text(0, folder_name)
+
+func delete_tree_folder(parent_tree_item):
+	tree.move_contents_to_parent(parent_tree_item)
+	parent_tree_item.free()

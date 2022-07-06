@@ -339,6 +339,11 @@ _global_script_classes=[ {
 "language": "GDScript",
 "path": "res://ui/TreeItemAware.gd"
 }, {
+"base": "Node",
+"class": "TreeItemUtil",
+"language": "GDScript",
+"path": "res://util/TreeItemUtil.gd"
+}, {
 "base": "Object",
 "class": "Util",
 "language": "GDScript",
@@ -411,6 +416,7 @@ _global_script_class_icons={
 "InkVoid": "",
 "StoryParagraph": "",
 "TreeItemAware": "",
+"TreeItemUtil": "",
 "Util": ""
 }
 
