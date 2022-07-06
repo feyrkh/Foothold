@@ -1,0 +1,26 @@
+[gd_scene load_steps=3 format=2]
+
+[ext_resource path="res://assets/icon/menu-settings-icon.png" type="Texture" id=1]
+[ext_resource path="res://ui/ItemManageDropdown.gd" type="Script" id=2]
+
+[node name="ItemManageDropdown" type="TextureButton"]
+margin_right = 32.0
+margin_bottom = 26.0
+size_flags_horizontal = 0
+size_flags_vertical = 0
+texture_normal = ExtResource( 1 )
+script = ExtResource( 2 )
+__meta__ = {
+"_edit_use_anchors_": false
+}
+
+[node name="Popup" type="PopupMenu" parent="."]
+margin_top = 30.0
+margin_right = 232.0
+margin_bottom = 50.0
+allow_search = true
+__meta__ = {
+"_edit_use_anchors_": false
+}
+
+[connection signal="id_pressed" from="Popup" to="." method="_on_Popup_id_pressed"]

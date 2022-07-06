@@ -21,6 +21,14 @@ func can_drop_data(position, data):
 		set_drop_mode_flags(DROP_MODE_DISABLED)
 		return false
 
+func check_is_ancestor_of(target_item, dropped_item):
+	var ancestor = target_item.get_parent()
+	while ancestor != null:
+		if ancestor == dropped_item:
+			return true
+		ancestor = ancestor.get_parent()
+	return false
+
 func can_drop_on_top(dropped_item, target_item):
 	print('candrop?')
 	if target_item == null or dropped_item == null:
@@ -32,6 +40,12 @@ func can_drop_on_top(dropped_item, target_item):
 		print('candrop: metadata is null')
 		return false
 
+	# You can't drop an item near one of its descendants
+	if check_is_ancestor_of(target_item, dropped_item):
+		print('candrop: no drop on descendant')
+		set_drop_mode_flags(DROP_MODE_DISABLED)
+		return false
+
 	# Some items are locked to a particular owner - check to see if this is one of them and whether the target is a qualified owner
 	var dropped_lock = dropped_item.get_metadata(0).get(CommandTree.KEY_OWNER_LOCK)
 	if dropped_lock:
@@ -41,14 +55,25 @@ func can_drop_on_top(dropped_item, target_item):
 			print('candrop: differing locks')
 			return false
 
-	var allowed_types = target_metadata.get(CommandTree.KEY_ALLOWED_TYPES)
+	# Each item has a type, and all items restrict what types of items they can contain
+	# Check that the target can contain the item being dropped
+	# There's a special case for folder-type items - any item can contain a folder, but
+	# every type the folder can contain must also be containable by the target
+	var allowed_types = target_metadata.get(CommandTree.KEY_ALLOWED_TYPES, [])
 	var drop_type = dropped_metadata.get(CommandTree.KEY_ITEM_TYPE)
-	if allowed_types != null and allowed_types.has(drop_type):
+	if drop_type == CommandTree.ITEM_TYPE_FOLDER:
+		var drop_allowed_types = dropped_metadata.get(CommandTree.KEY_ALLOWED_TYPES, [])
+		for drop_allowed_type in drop_allowed_types:
+			if !allowed_types.has(drop_allowed_type):
+				print('candrop: mismatched allowed types; ', drop_allowed_type, ' vs ', allowed_types)
+				return false
+		print('candrop: matched allowed types')
+		return true
+	elif allowed_types != null and allowed_types.has(drop_type):
 		return true
 	else:
 		print('candrop: disallowed types')
 		return false
-
 
 func check_drop_data_valid(position, dropped_item):
 	var target_item:TreeItem = get_item_at_position(position)
@@ -65,6 +90,10 @@ func check_drop_data_valid(position, dropped_item):
 		print('chkdrop: no target item')
 		#return dropped_item_parent == get_root()
 		return true
+
+	if check_is_ancestor_of(target_item, dropped_item):
+		print('chkdrop: dropped is ancestor of target')
+		return false
 
 	var dropped_on_parent:TreeItem = target_item.get_parent()
 	var drop_offset = get_drop_section_at_position(position)
@@ -199,6 +228,7 @@ func clone_item(item_parent, item):
 	for i in range(columns):
 		new_item.set_metadata(i, item.get_metadata(i))
 		new_item.set_text(i, item.get_text(i))
+		new_item.set_icon(i, item.get_icon(i))
 	new_item.disable_folding = item.disable_folding
 	new_item.collapsed = item.collapsed
 	new_item.custom_minimum_height = item.custom_minimum_height

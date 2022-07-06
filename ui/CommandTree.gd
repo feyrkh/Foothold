@@ -9,8 +9,14 @@ const KEY_ALLOWED_TYPES='a' # Array of ITEM_TYPE_* values which are allowed for 
 const KEY_OWNER_LOCK='O' # ID of the owner of this container or entry - if set on an item, items can't be moved outside of the owning container. Creating a new container duplicates inside an existing container will duplicate its owner ID.
 
 const ITEM_TYPE_LOCATION='l' # A physical place
+const ITEM_TYPE_FOLDER='/' # An organizational folder
 
 const ITEM_AMOUNT='A'
+
+const item_type_icon_map = {
+	ITEM_TYPE_LOCATION: preload("res://assets/icon/location-icon.png"),
+	ITEM_TYPE_FOLDER: preload("res://assets/icon/folder-icon.png"),
+}
 
 var tree:Tree
 var __next_id = 0
@@ -97,9 +103,13 @@ func add_item(loc_name, loc_metadata={}, root=tree.get_root()):
 func configure_item(new_item, item_name, metadata):
 	new_item.set_metadata(0, metadata)
 	new_item.set_text(0, item_name)
-	match(metadata.get(KEY_ITEM_TYPE, '')):
+	var item_type = metadata.get(KEY_ITEM_TYPE, '')
+	match(item_type):
 		ITEM_TYPE_LOCATION:
 			configure_location(new_item, metadata)
+	var icon = item_type_icon_map.get(item_type)
+	if icon != null:
+		new_item.set_icon(0, icon)
 	return new_item
 
 func configure_location(new_item, metadata):
@@ -131,7 +141,7 @@ func create_tree_folder(parent_tree_item, folder_name):
 	var md = parent_tree_item.get_metadata(0)
 	var allowed_types = md.get(KEY_ALLOWED_TYPES)
 	var owner_lock = md.get(KEY_OWNER_LOCK)
-	var new_md = {}
+	var new_md = {KEY_ITEM_TYPE: ITEM_TYPE_FOLDER}
 	if allowed_types:
 		new_md[KEY_ALLOWED_TYPES] = allowed_types
 	if owner_lock:

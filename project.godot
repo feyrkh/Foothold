@@ -9,6 +9,11 @@
 config_version=4
 
 _global_script_classes=[ {
+"base": "TreeItemAware",
+"class": "ActionPanelContents",
+"language": "GDScript",
+"path": "res://ui/actions/ActionPanelContents.gd"
+}, {
 "base": "Control",
 "class": "CommandTree",
 "language": "GDScript",
@@ -340,6 +345,7 @@ _global_script_classes=[ {
 "path": "res://util/Util.gd"
 } ]
 _global_script_class_icons={
+"ActionPanelContents": "",
 "CommandTree": "",
 "InkBase": "",
 "InkBookSaveData": "",
