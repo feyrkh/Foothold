@@ -249,5 +249,7 @@ func move_contents_to_parent(item_parent):
 		return
 	var child = item_parent.get_children()
 	while child != null:
-		clone_item(new_parent, child)
-		free_item(child)
+		var old_child = child
+		child = child.get_next()
+		clone_item(new_parent, old_child)
+		free_item(old_child)
